@@ -19,6 +19,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
@@ -60,6 +63,35 @@ namespace Webhooks.API
                 .AddTransient<IGrantUrlTesterService, GrantUrlTesterService>()
                 .AddTransient<IWebhooksRetriever, WebhooksRetriever>()
                 .AddTransient<IWebhooksSender, WebhooksSender>();
+
+            // Switch between Zipkin/Jaeger by setting USE_EXPORTER in appsettings.json or .env file.
+            var exporter = Environment.GetEnvironmentVariable("USE_EXPORTER");
+            if (exporter == null && this.Configuration.GetValue<string>("USE_EXPORTER").ToLowerInvariant() != "")
+            {
+                exporter = this.Configuration.GetValue<string>("USE_EXPORTER").ToLowerInvariant();
+            }
+            switch (exporter)
+            {
+                case "jaeger":
+                    services.AddOpenTelemetryTracing((builder) => builder
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(System.Reflection.Assembly.GetExecutingAssembly().ToString().Split(",")[0]))
+                        .AddAspNetCoreInstrumentation()
+                        .AddGrpcClientInstrumentation()
+                        .AddHttpClientInstrumentation()
+                        .AddJaegerExporter());
+                    services.Configure<JaegerExporterOptions>(this.Configuration.GetSection("Jaeger"));
+                    break;
+                case "zipkin":
+                    services.AddOpenTelemetryTracing((builder) => builder
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(System.Reflection.Assembly.GetExecutingAssembly().ToString().Split(",")[0]))
+                        .AddAspNetCoreInstrumentation()
+                        .AddGrpcClientInstrumentation()
+                        .AddHttpClientInstrumentation()
+                        .AddZipkinExporter());
+
+                    services.Configure<ZipkinExporterOptions>(this.Configuration.GetSection("Zipkin"));
+                    break;
+            }
 
             var container = new ContainerBuilder();
             container.Populate(services);

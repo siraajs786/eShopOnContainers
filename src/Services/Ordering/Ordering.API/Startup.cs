@@ -30,6 +30,9 @@
     using Microsoft.Extensions.Diagnostics.HealthChecks;
     using Microsoft.Extensions.Logging;
     using Microsoft.OpenApi.Models;
+    using OpenTelemetry.Exporter;
+    using OpenTelemetry.Resources;
+    using OpenTelemetry.Trace;
     using Ordering.Infrastructure;
     using RabbitMQ.Client;
     using System;
@@ -72,6 +75,35 @@
 
             container.RegisterModule(new MediatorModule());
             container.RegisterModule(new ApplicationModule(Configuration["ConnectionString"]));
+
+            // Switch between Zipkin/Jaeger by setting USE_EXPORTER in appsettings.json or .env file.
+            var exporter = Environment.GetEnvironmentVariable("USE_EXPORTER");
+            if (exporter == null && this.Configuration.GetValue<string>("USE_EXPORTER").ToLowerInvariant() != "")
+            {
+                exporter = this.Configuration.GetValue<string>("USE_EXPORTER").ToLowerInvariant();
+            }
+            switch (exporter)
+            {
+                case "jaeger":
+                    services.AddOpenTelemetryTracing((builder) => builder
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(System.Reflection.Assembly.GetExecutingAssembly().ToString().Split(",")[0]))
+                        .AddAspNetCoreInstrumentation()
+                        .AddGrpcClientInstrumentation()
+                        .AddHttpClientInstrumentation()
+                        .AddJaegerExporter());
+                    services.Configure<JaegerExporterOptions>(this.Configuration.GetSection("Jaeger"));
+                    break;
+                case "zipkin":
+                    services.AddOpenTelemetryTracing((builder) => builder
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(System.Reflection.Assembly.GetExecutingAssembly().ToString().Split(",")[0]))
+                        .AddAspNetCoreInstrumentation()
+                        .AddGrpcClientInstrumentation()
+                        .AddHttpClientInstrumentation()
+                        .AddZipkinExporter());
+
+                    services.Configure<ZipkinExporterOptions>(this.Configuration.GetSection("Zipkin"));
+                    break;
+            }
 
             return new AutofacServiceProvider(container.Build());
         }

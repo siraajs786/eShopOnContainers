@@ -57,6 +57,7 @@ services:
       - UseCustomizationData=True
       - ApplicationInsights__InstrumentationKey=${INSTRUMENTATION_KEY}
       - OrchestratorType=${ORCHESTRATOR_TYPE}
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5105:80"
 
@@ -77,6 +78,7 @@ services:
       - PATH_BASE=/basket-api
       - GRPC_PORT=81
       - PORT=80
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5103:80"
       - "9103:81"
@@ -99,6 +101,7 @@ services:
       - GRPC_PORT=81
       - PORT=80
       - PATH_BASE=/catalog-api
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5101:80"
       - "9101:81"
@@ -124,6 +127,7 @@ services:
       - PATH_BASE=/ordering-api
       - GRPC_PORT=81
       - PORT=80
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5102:80"
       - "9102:81"
@@ -169,6 +173,7 @@ services:
       - OrchestratorType=${ORCHESTRATOR_TYPE}
       - UseLoadTest=${USE_LOADTEST:-False}
       - PATH_BASE=/marketing-api
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5110:80"
 
@@ -184,6 +189,7 @@ services:
       - OrchestratorType=${ORCHESTRATOR_TYPE}
       - Serilog__MinimumLevel__Override__payment-api.IntegrationEvents.EventHandling=Verbose
       - Serilog__MinimumLevel__Override__Microsoft.eShopOnContainers.BuildingBlocks.EventBusRabbitMQ=Verbose
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5108:80"
 
@@ -203,6 +209,7 @@ services:
       - OrchestratorType=${ORCHESTRATOR_TYPE}
       - UseLoadTest=${USE_LOADTEST:-False}
       - PATH_BASE=/locations-api
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5109:80"
 
@@ -216,10 +223,13 @@ services:
       - EventBusPassword=${ESHOP_SERVICE_BUS_PASSWORD}
       - IdentityUrl=http://identity-api
       - IdentityUrlExternal=http://${ESHOP_EXTERNAL_DNS_NAME_OR_IP}:5105
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5113:80"
 
   mobileshoppingapigw:
+    environment:
+      - USE_EXPORTER=${USE_EXPORTER}
     volumes:
       - ./ApiGateways/Envoy/config/mobilemarketing:/etc/envoy
     ports:
@@ -227,6 +237,8 @@ services:
     - "15200:8001"
 
   mobilemarketingapigw:
+    environment:
+      - USE_EXPORTER=${USE_EXPORTER}
     volumes:
       - ./ApiGateways/Envoy/config/mobileshopping:/etc/envoy
     ports:
@@ -234,6 +246,8 @@ services:
     - "15201:8001"
 
   webshoppingapigw:
+    environment:
+      - USE_EXPORTER=${USE_EXPORTER}
     volumes:
       - ./ApiGateways/Envoy/config/webshopping:/etc/envoy
     ports:
@@ -241,6 +255,8 @@ services:
     - "15202:8001"
 
   webmarketingapigw:
+    environment:
+      - USE_EXPORTER=${USE_EXPORTER}
     volumes:
       - ./ApiGateways/Envoy/config/webmarketing:/etc/envoy
     ports:
@@ -264,7 +280,8 @@ services:
       - MarketingUrlHC=http://marketing-api/hc
       - PaymentUrlHC=http://payment-api/hc
       - LocationUrlHC=http://locations-api/hc
-      - IdentityUrlExternal=http://${ESHOP_EXTERNAL_DNS_NAME_OR_IP}:5105
+      - IdentityUrlExternal=http://${ESHOP_EXTERNAL_DNS_NAME_OR_IP}:5105          
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5120:80"
 
@@ -286,6 +303,7 @@ services:
       - PaymentUrlHC=http://payment-api/hc
       - LocationUrlHC=http://locations-api/hc
       - IdentityUrlExternal=http://${ESHOP_EXTERNAL_DNS_NAME_OR_IP}:5105
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5121:80"
 
@@ -335,6 +353,7 @@ services:
       - HealthChecksUI__HealthChecks__12__Uri=http://ordering-backgroundtasks/hc
       - ApplicationInsights__InstrumentationKey=${INSTRUMENTATION_KEY}
       - OrchestratorType=${ORCHESTRATOR_TYPE}
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5107:80"
 
@@ -349,7 +368,8 @@ services:
       - UseCustomizationData=True
       - ApplicationInsights__InstrumentationKey=${INSTRUMENTATION_KEY}
       - OrchestratorType=${ORCHESTRATOR_TYPE}
-      - SignalrHubUrl=http://${ESHOP_EXTERNAL_DNS_NAME_OR_IP}:5202
+      - SignalrHubUrl=http://${ESHOP_EXTERNAL_DNS_NAME_OR_IP}:5202        
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5104:80"
 
@@ -365,7 +385,8 @@ services:
       - UseCustomizationData=True
       - ApplicationInsights__InstrumentationKey=${INSTRUMENTATION_KEY}
       - OrchestratorType=${ORCHESTRATOR_TYPE}
-      - UseLoadTest=${USE_LOADTEST:-False}
+      - UseLoadTest=${USE_LOADTEST:-False}          
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5100:80"
 
@@ -376,7 +397,8 @@ services:
       - IdentityUrl=http://${ESHOP_EXTERNAL_DNS_NAME_OR_IP}:5105
       - CallBackUrl=http://${ESHOP_EXTERNAL_DNS_NAME_OR_IP}:5114
       - WebhooksUrl=http://webhooks-api
-      - SelfUrl=http://webhooks-client/
+      - SelfUrl=http://webhooks-client/          
+      - USE_EXPORTER=${USE_EXPORTER}
     ports:
       - "5114:80"
 volumes:

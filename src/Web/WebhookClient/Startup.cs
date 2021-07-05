@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using System;
 using System.Linq;
 using System.Net;
@@ -40,6 +43,35 @@ namespace WebhookClient
                 .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             services.AddControllers();
+
+            // Switch between Zipkin/Jaeger by setting USE_EXPORTER in appsettings.json or .env file.
+            var exporter = Environment.GetEnvironmentVariable("USE_EXPORTER");
+            if (exporter == null && this.Configuration.GetValue<string>("USE_EXPORTER").ToLowerInvariant() != "")
+            {
+                exporter = this.Configuration.GetValue<string>("USE_EXPORTER").ToLowerInvariant();
+            }
+            switch (exporter)
+            {
+                case "jaeger":
+                    services.AddOpenTelemetryTracing((builder) => builder
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(System.Reflection.Assembly.GetExecutingAssembly().ToString().Split(",")[0]))
+                        .AddAspNetCoreInstrumentation()
+                        .AddGrpcClientInstrumentation()
+                        .AddHttpClientInstrumentation()
+                        .AddJaegerExporter());
+                    services.Configure<JaegerExporterOptions>(this.Configuration.GetSection("Jaeger"));
+                    break;
+                case "zipkin":
+                    services.AddOpenTelemetryTracing((builder) => builder
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(System.Reflection.Assembly.GetExecutingAssembly().ToString().Split(",")[0]))
+                        .AddAspNetCoreInstrumentation()
+                        .AddGrpcClientInstrumentation()
+                        .AddHttpClientInstrumentation()
+                        .AddZipkinExporter());
+
+                    services.Configure<ZipkinExporterOptions>(this.Configuration.GetSection("Zipkin"));
+                    break;
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
