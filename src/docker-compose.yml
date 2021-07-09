@@ -1,6 +1,28 @@
 version: '3.4'
 
+
 services:
+  # Collector
+  otlp:
+    image: otel/opentelemetry-collector-contrib-dev    
+    command: ["--config=/collector-config.yaml", "--log-level=DEBUG"]
+    volumes:
+      - ./collector-config.yaml:/collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "55680:55680"
+      - "55681:55681"
+    depends_on:
+      - zipkin
+
+  # Prometheus
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
 
   seq:
     image: datalust/seq:latest

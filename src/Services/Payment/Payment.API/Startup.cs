@@ -84,7 +84,8 @@ namespace Payment.API
 
             RegisterEventBus(services);
 
-            // Switch between Zipkin/Jaeger by setting USE_EXPORTER in appsettings.json or .env file.
+            // if USE_EXPORTER value is  'otlp' code will configure Otlp collector with zipkin receiver
+            // or only 'zipkin' then zipkin exporter is configured or 'jaeger' only jaeger exporter is configured as per appsettings.json or .env file.
             var exporter = Environment.GetEnvironmentVariable("USE_EXPORTER");
             if (exporter == null && this.Configuration.GetValue<string>("USE_EXPORTER").ToLowerInvariant() != "")
             {
@@ -110,6 +111,21 @@ namespace Payment.API
                         .AddZipkinExporter());
 
                     services.Configure<ZipkinExporterOptions>(this.Configuration.GetSection("Zipkin"));
+                    break;
+                case "otlp":
+                    // Adding the OtlpExporter creates a GrpcChannel.
+                    // This switch must be set before creating a GrpcChannel/HttpClient when calling an insecure gRPC service.
+                    // See: https://docs.microsoft.com/aspnet/core/grpc/troubleshoot#call-insecure-grpc-services-with-net-core-client
+                    AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+
+                    services.AddOpenTelemetryTracing((builder) => builder
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(System.Reflection.Assembly.GetExecutingAssembly().ToString().Split(",")[0]))
+                        .AddAspNetCoreInstrumentation()
+                        .AddHttpClientInstrumentation()
+                        .AddOtlpExporter(otlpOptions =>
+                        {
+                            otlpOptions.Endpoint = new Uri(this.Configuration.GetValue<string>("Otlp:Endpoint"));
+                        }));
                     break;
             }
 

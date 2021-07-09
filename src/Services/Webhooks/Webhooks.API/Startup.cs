@@ -64,7 +64,8 @@ namespace Webhooks.API
                 .AddTransient<IWebhooksRetriever, WebhooksRetriever>()
                 .AddTransient<IWebhooksSender, WebhooksSender>();
 
-            // Switch between Zipkin/Jaeger by setting USE_EXPORTER in appsettings.json or .env file.
+            // if USE_EXPORTER value is  'otlp' code will configure Otlp collector with zipkin receiver
+            // or only 'zipkin' then zipkin exporter is configured or 'jaeger' only jaeger exporter is configured as per appsettings.json or .env file.
             var exporter = Environment.GetEnvironmentVariable("USE_EXPORTER");
             if (exporter == null && this.Configuration.GetValue<string>("USE_EXPORTER").ToLowerInvariant() != "")
             {
